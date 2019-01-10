@@ -1,0 +1,3 @@
+php_extensions_custom: []
+
+php_extensions: "{{ php_extensions_default + php_extensions_custom }}"

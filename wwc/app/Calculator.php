@@ -44,7 +44,7 @@ class Calculator
         sort($this->pack_sizes);
 
         foreach ($this->pack_sizes as $size) {
-            if ($size = $input) {
+            if ($size === $input) {
                 return [
                     'total' => $size,
                     'packs' => [

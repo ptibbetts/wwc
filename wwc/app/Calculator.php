@@ -48,9 +48,11 @@ class Calculator
                 return [
                     'total' => $size,
                     'packs' => [
-                        'contains' => $size,
-                        'quantity' => 1,
-                        'total' => $size
+                        [
+                            'contains' => $size,
+                            'quantity' => 1,
+                            'total' => $size
+                        ]
                     ]
                 ];
             }

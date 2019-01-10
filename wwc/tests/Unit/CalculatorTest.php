@@ -13,22 +13,20 @@ class CalculatorTest extends TestCase
     /** @test */
     public function it_uses_the_smallest_pack_size()
     {
-        $calculator = new Calculator();
-        $sizes = [1,2,3];
-        $calculator->setPackSizes($sizes);
+        $tests = [
+            ['answer' => 1, 'sizes' => [1,2,3]],
+            ['answer' => 4, 'sizes' => [4,5,6]],
+            ['answer' => 1000, 'sizes' => [1000,5000,10000]]
+        ];
 
-        $calculation = $calculator->calculate(1);
+        foreach ($tests as $test) {
+            $calculator = new Calculator($test['sizes']);
 
-        // $calculation = [
-        //     [
-        //         'contains' => 1,
-        //         'quantity' => 1,
-        //         'total' => 1
-        //     ]
-        // ];
+            $calculation = $calculator->calculate($test['answer']);
 
-        $this->assertEquals($calculation[0]['contains'], min($sizes));
-        $this->assertEquals($calculation[0]['total'], min($sizes));
-        $this->assertEquals($calculation[0]['quantity'], 1);
+            $this->assertEquals($calculation['packs'][0]['contains'], min($test['sizes']));
+            $this->assertEquals($calculation['packs'][0]['total'], min($test['sizes']));
+            $this->assertEquals($calculation['packs'][0]['quantity'], 1);
+        }
     }
 }

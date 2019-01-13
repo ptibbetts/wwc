@@ -167,8 +167,14 @@ class Calculator
                                             if (array_key_exists($i + 1, array_keys($all_ratios))) {
                                                 $smaller = array_keys($all_ratios)[$i+1];
                                                 if (($this->remaining - ($contains + $smaller)) < abs($wasted)) {
-                                                    $this->addPack($smaller, 1);
-                                                    break;
+                                                    if ((array_values($all_ratios)[$i - 1]) < (array_values($all_ratios)[$i])) {
+                                                        $larger = array_keys($all_ratios)[$i - 1];
+                                                        $this->addPack($contains, 1);
+                                                        break;
+                                                    } else {
+                                                        $this->addPack($smaller, 1);
+                                                        break;
+                                                    }
                                                 } else {
                                                     $contains = array_keys($all_ratios)[$i - 1];
                                                     $quantity = ceil(array_values($all_ratios)[$i - 1]);

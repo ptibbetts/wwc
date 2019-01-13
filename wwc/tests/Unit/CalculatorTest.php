@@ -116,18 +116,32 @@ class CalculatorTest extends TestCase
 
         $first = $calculator->calculate(1);
         $this->assertEquals(250, $first['total']);
+        $this->assertEquals(1, $first['packs'][0]['quantity']);
+        $this->assertEquals(250, $first['packs'][0]['contains']);
 
         $second = $calculator->calculate(250);
+        $this->assertEquals(250, $second['packs'][0]['contains']);
+        $this->assertEquals(1, $second['packs'][0]['quantity']);
         $this->assertEquals(250, $second['packs'][0]['contains']);
 
         $third = $calculator->calculate(251);
         $this->assertEquals(500, $third['total']);
+        $this->assertEquals(1, $third['packs'][0]['quantity']);
+        $this->assertEquals(500, $third['packs'][0]['contains']);
 
         $fourth = $calculator->calculate(501);
         $this->assertEquals(750, $fourth['total']);
+        $this->assertEquals(500, $fourth['packs'][0]['contains']);
+        $this->assertEquals(250, $fourth['packs'][1]['contains']);
 
         $fifth = $calculator->calculate(12001);
         $this->assertEquals(12250, $fifth['total']);
+        $this->assertEquals(5000, $fifth['packs'][0]['contains']);
+        $this->assertEquals(2, $fifth['packs'][0]['quantity']);
+        $this->assertEquals(1, $fifth['packs'][1]['quantity']);
+        $this->assertEquals(2000, $fifth['packs'][1]['contains']);
+        $this->assertEquals(1, $fifth['packs'][2]['quantity']);
+        $this->assertEquals(250, $fifth['packs'][2]['contains']);
     }
 
     /** @test */

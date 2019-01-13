@@ -32,6 +32,13 @@ class Calculator
     protected $total = 0;
 
     /**
+     * Total number of cards remaining to fulfil order
+     *
+     * @var integer
+     */
+    protected $remaining = 0;
+
+    /**
      * @param array $pack_sizes
      */
     public function __construct(array $pack_sizes = [])
@@ -93,10 +100,15 @@ class Calculator
     {
         $this->reset();
 
+        // if a developer is trying to break it
+        if ($input <= 0) {
+            $this->addPack(0, 0);
+            return $this->getResult();
+        }
+
         // if there is a pack with the desired amount
         if (in_array($input, $this->getPackSizes())) {
             $this->addPack($input);
-
             return $this->getResult();
         }
 
@@ -104,26 +116,25 @@ class Calculator
         $smallest_size = $this->getSmallestPack();
         if ($input < $smallest_size) {
             $this->addPack($smallest_size);
-
             return $this->getResult();
         }
 
         // if not find a combination of packs
-        $remaining = $input;
+        $this->remaining = $input;
         $i = 0;
 
-        while ($remaining >= 1) {
+        while ($this->remaining >= 1) {
             ${'possibles_'.$i} = [];
             $all = [];
 
-            if ($remaining < $smallest_size) {
+            if ($this->remaining < $smallest_size) {
                 $this->addPack($smallest_size);
                 return $this->getResult();
             }
 
             // work out which packs would fulfil the order
             foreach ($this->getPackSizes($asc = false) as $size) {
-                $ratio = $remaining / $size;
+                $ratio = $this->remaining / $size;
 
                 if ($ratio >= 1) {
                     ${'possibles_'.$i}[$size] = $ratio;
@@ -132,41 +143,58 @@ class Calculator
 
             if (${'possibles_'.$i}) { // there are packs that would fulfil the order
                 asort(${'possibles_'.$i}); // sort ASC
-                $old_remaining = $remaining;
 
-                $smaller_size = array_key_first(${'possibles_'.$i});
-                $smaller_quantity = floor(array_values(${'possibles_'.$i})[0]);
-
-                $remaining = $remaining - ($smaller_quantity * $smaller_size);
-
-                if ($remaining >= 1) {
+                if ($this->remaining >= 1) {
                     foreach ($this->getPackSizes($asc = false) as $size) {
-                        $ratio = $remaining / $size;
+                        $ratio = $this->remaining / $size;
                         $all_ratios[$size] = $ratio;
                     }
 
-                    arsort($all_ratios);
+                    asort($all_ratios);
 
-                    $bigger_size = array_keys($all_ratios)[1];
-                    $ceiled = ceil(array_values($all_ratios)[1]);
+                    $i = 0;
+                    foreach ($all_ratios as $size => $ratio) {
+                        if ($ratio >= 1) {
+                            $contains = $size;
+                            $quantity = ceil($ratio);
 
-                    $bigger_amount = $bigger_size * $ceiled;
-                    $bigger_wasted = (($bigger_amount * 2) - $old_remaining);
-
-                    $smaller_amount = $smaller_size * $smaller_quantity;
-                    $smaller_wasted = ($old_remaining - $smaller_amount);
-
-                    if (($bigger_amount * 2) > $old_remaining && // if 2 of the bigger size would cover it
-                        $bigger_wasted < $smaller_wasted) { // and there are less wasted than using the smaller pack
-                        $remaining = $remaining - (($ceiled * 2) * $bigger_size);
-                        $this->addPack($bigger_size, ($ceiled * 2)); // use 2x the bigger pack
-                    } elseif ($bigger_amount > $old_remaining) {
-                        $this->addPack($bigger_size, $ceiled); // use the bigger pack
-                        $remaining = $remaining - $bigger_amount;
-                    } else {
-                        $this->addPack($smaller_size, $smaller_quantity); // use the smaller pack
+                            if (ceil($ratio) >= 2) {
+                                if (! is_int($ratio)) {
+                                    if (array_key_exists($i - 1, array_keys($all_ratios))) {
+                                        $wasted = $this->remaining - ($contains * $quantity);
+                                        $bigger_wasted = $this->remaining - array_keys($all_ratios)[$i - 1];
+                                        if (array_keys($all_ratios)[$i - 1] >= $this->remaining && abs($bigger_wasted) <= abs($wasted)) {
+                                            if (array_key_exists($i + 1, array_keys($all_ratios))) {
+                                                $smaller = array_keys($all_ratios)[$i+1];
+                                                if (($this->remaining - ($contains + $smaller)) < abs($wasted)) {
+                                                    $this->addPack($smaller, 1);
+                                                    break;
+                                                } else {
+                                                    $contains = array_keys($all_ratios)[$i - 1];
+                                                    $quantity = ceil(array_values($all_ratios)[$i - 1]);
+                                                }
+                                            } else {
+                                                if (array_keys($all_ratios)[$i - 1] > $this->remaining) {
+                                                    $larger = array_keys($all_ratios)[$i - 1];
+                                                    $this->addPack($larger, 1);
+                                                    break;
+                                                }
+                                            }
+                                        } else {
+                                            if (($contains * $quantity) >= $this->remaining) {
+                                                $quantity = $quantity - 1;
+                                            }
+                                        }
+                                    } else {
+                                        $quantity = $quantity - 1;
+                                    }
+                                }
+                            }
+                            $this->addPack($contains, $quantity);
+                            break;
+                        }
+                        $i++;
                     }
-                    $i++; // proceed to a smaller pack size
                 } else {
                     $this->addPack($smaller_size, $smaller_quantity); // use the smaller pack
                 }
@@ -175,20 +203,33 @@ class Calculator
                 $this->addSmallestPack();
             }
         }
-
         return $this->getResult();
     }
 
     /**
      * Returns the result
+     * and sets the quantity required for each size
      *
      * @return array
      */
     private function getResult()
     {
+        $packs = [];
+        foreach ($this->packs as $pack) {
+            $size = $pack['contains'];
+            if (array_key_exists($size, $packs)) {
+                $packs[$size]['quantity'] = $packs[$size]['quantity'] + $pack['quantity'];
+                $packs[$size]['total'] = $packs[$size]['total'] + $pack['total'];
+            } else {
+                $packs[$size]['quantity'] = $pack['quantity'];
+                $packs[$size]['total'] = $pack['total'];
+            }
+            $packs[$size]['contains'] = $pack['contains'];
+        }
+
         return [
             'total' => $this->total,
-            'packs' => $this->packs
+            'packs' => array_values($packs)
         ];
     }
 
@@ -201,7 +242,11 @@ class Calculator
      */
     private function addPack($amount, $quantity = 1)
     {
+        if ($amount <= 0) {
+            return;
+        }
         $total = $amount * $quantity;
+        $this->remaining = $this->remaining - $total;
         $this->total = $this->total + $total;
         array_push($this->packs, [
                 'contains' => $amount,

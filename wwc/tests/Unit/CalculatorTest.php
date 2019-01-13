@@ -10,6 +10,13 @@ use App\Calculator;
 
 class CalculatorTest extends TestCase
 {
+    /**
+     * Pack Sizs from the brief
+     *
+     * @var array
+     */
+    protected $brief_sizes = [250, 500, 1000, 2000, 5000];
+
     /** @test */
     public function it_uses_the_smallest_pack_size()
     {
@@ -54,6 +61,8 @@ class CalculatorTest extends TestCase
         $calculator = new Calculator($sizes);
 
         $calculation = $calculator->calculate(20);
+
+        $this->assertEquals(20, $calculation['total']);
 
         $this->assertEquals(10, $calculation['packs'][0]['contains']);
         $this->assertEquals(2, $calculation['packs'][0]['quantity']);
@@ -103,9 +112,7 @@ class CalculatorTest extends TestCase
     /** @test */
     public function it_passes_the_rules_set_in_the_brief()
     {
-        $sizes = [250, 500, 1000, 2000, 5000];
-
-        $calculator = new Calculator($sizes);
+        $calculator = new Calculator($this->brief_sizes);
 
         $first = $calculator->calculate(1);
         $this->assertEquals(250, $first['total']);
@@ -121,5 +128,25 @@ class CalculatorTest extends TestCase
 
         $fifth = $calculator->calculate(12001);
         $this->assertEquals(12250, $fifth['total']);
+    }
+
+    /** @test */
+    public function it_doesnt_send_2_500_boxes_for_999()
+    {
+        $calculator = new Calculator($this->brief_sizes);
+
+        $result = $calculator->calculate(999);
+        $this->assertEquals(1000, $result['packs'][0]['contains']);
+    }
+
+    /** @test */
+    public function it_doesnt_send_20_500_boxes_for_9999()
+    {
+        $calculator = new Calculator($this->brief_sizes);
+
+        $result = $calculator->calculate(9999);
+        $this->assertEquals(5000, $result['packs'][0]['contains']);
+        $this->assertEquals(2, $result['packs'][0]['quantity']);
+        $this->assertEquals(10000, $result['total']);
     }
 }

@@ -42,6 +42,12 @@ COPY . /var/www
 # Copy existing application directory permissions
 COPY --chown=www:www . /var/www
 
+# Change permissions of working directory
+RUN chown www:www /var/www
+
+# Copy the example ENV file
+COPY .env.example /var/www/.env
+
 # Change current user to www
 USER www
 
